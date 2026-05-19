@@ -166,6 +166,19 @@ describe("postGenerator/drafts generate action", () => {
     ).rejects.toThrow(/UNAUTHENTICATED/);
   });
 
+  it("empty brief is rejected", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, brandId } = await seedUserAndBrand(t);
+    await expect(
+      t.withIdentity(asUser(userId)).action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "   ",
+        channel: "x",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/INVALID_BRIEF/);
+  });
+
   it("wrong-brand caller is rejected (NOT_FOUND)", async () => {
     const t = convexTest(schema, modules);
     const { brandId } = await seedUserAndBrand(t);

@@ -99,6 +99,14 @@ describe("post-writer invoke", () => {
     });
   });
 
+  it("translates OPENROUTER_AUTH to GEN_FAILED (non-retryable)", async () => {
+    chatCompleteMock.mockRejectedValueOnce(new OpenRouterError("OPENROUTER_AUTH", "bad key"));
+    await expect(invoke(baseInput)).rejects.toMatchObject({
+      name: "GEN_FAILED",
+      retryable: false,
+    });
+  });
+
   it("bubbles up unknown errors", async () => {
     chatCompleteMock.mockRejectedValueOnce(new Error("random failure"));
     await expect(invoke(baseInput)).rejects.toThrow("random failure");

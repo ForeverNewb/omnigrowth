@@ -26,6 +26,10 @@ export const generate = action({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new ConvexError({ code: "UNAUTHENTICATED" });
 
+    if (!args.brief.trim()) {
+      throw new ConvexError({ code: "INVALID_BRIEF" });
+    }
+
     if (!isChannel(args.channel)) {
       throw new ConvexError({ code: "INVALID_CHANNEL", channel: args.channel });
     }

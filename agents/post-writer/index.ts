@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { type ChatMessage, OpenRouterError, chatComplete } from "@/lib/openrouter";
 import type { TraceContext } from "@/lib/openrouter/trace";
 import { type Channel, renderChannelRules } from "./channels";
-import { modelChainsByMedia } from "./config";
+import { modelChainsByMedia, retryRules } from "./config";
 
 const AGENT_DIR = join(process.cwd(), "agents", "post-writer");
 
@@ -76,6 +76,7 @@ export async function invoke(input: AgentInput): Promise<AgentResult> {
       modelChain: [...modelChainsByMedia.text],
       messages,
       traceContext: input.traceContext,
+      signal: AbortSignal.timeout(retryRules.timeoutMs),
     });
 
     if (result.refused) {
@@ -98,6 +99,9 @@ export async function invoke(input: AgentInput): Promise<AgentResult> {
       }
       if (err.code === "OPENROUTER_CHAIN_EXHAUSTED") {
         throw new AgentError("GEN_FAILED", err.message, true);
+      }
+      if (err.code === "OPENROUTER_AUTH") {
+        throw new AgentError("GEN_FAILED", err.message, false);
       }
     }
     throw err;
