@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a context7 gate. Decide narrowly whether this edit introduces GENUINELY NEW library/API surface area.\n\nSTEP 0 - USER OVERRIDE CHECK:\nIf any prior USER message in the transcript contains the exact uppercase phrase 'I GIVE YOU MY EXPLICIT PERMISSION', respond {\"ok\": true, \"reason\": \"User-granted bypass.\"} and STOP. Do not run further checks.\n\nSTEP 1 - FILE EXTENSION CHECK:\nIf path ends in .md, .mdx, .json, .yaml, .yml, .txt, .csv, .env, .sql, .sh, .css, .html, or any non-JS/TS extension: respond {\"ok\": true, \"reason\": \"Non-code file.\"} and STOP.\n\nSTEP 2 - ONLY for .ts, .tsx, .js, .jsx, .mjs, .cjs:\n\nDEFAULT TO PASS. Lean PASS in ambiguous cases \u2014 false-fails are costly, false-passes are cheap.\n\nPASS THROUGH (respond {\"ok\": true, \"reason\": \"No new library surface area.\"}) for:\n- More tests using testing libs already imported in the file\n- Validation, error handling, type narrowing, trim/normalize on existing handlers (no new imports)\n- Refactoring within the existing library set (extract, rename, move)\n- Pure JSX, copy, CSS class, or string changes\n- Adding rows/cases/entries to existing collections, switches, configs\n- Implementing previously-stubbed handlers using patterns already in the file\n- Adding state/effects with hooks the file already uses\n\nBLOCK ONLY when introducing GENUINELY NEW surface area:\n- First import of a library (or first use of a major sub-module) in this project\n- First call to a framework feature/hook the project hasn't used (e.g. first unstable_after, first useFormState)\n- First non-trivial integration (OAuth, WebSocket, custom serialization, payment SDK, etc.)\n\nWhen blocking is warranted: Search the FULL transcript including ALL prior tool calls \u2014 context7 calls may have happened MANY turns ago, that still counts. Scan thoroughly before concluding missing.\n\nIf any 'mcp__context7' call appears anywhere in the transcript: respond {\"ok\": true, \"reason\": \"context7 already called.\"}.\n\nElse, only if truly new surface area: respond {\"ok\": false, \"reason\": \"context7 must be called before introducing new library/API surface area.\"}.",
+            "timeout": 15,
+            "statusMessage": "Checking context7 compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a bug fix protocol gate.\n\nSTEP 0 - USER OVERRIDE CHECK:\nIf any prior USER message in the transcript contains the exact uppercase phrase 'I GIVE YOU MY EXPLICIT PERMISSION', respond {\"ok\": true, \"reason\": \"User-granted bypass.\"} and STOP. Do not run further checks.\n\nDecide narrowly whether this is a TRUE bug fix.\n\nTRUE bug fix = restoring behavior that previously worked and broke. E.g. 'page used to render, now 404s', 'query used to return all rows, now half', 'auth callback rejecting valid sessions', 'tests were passing, now fail'.\n\nNOT a bug fix (pass through) even if conversation says 'fix'/'broken'/'wrong':\n- Adding NEW validation/constraints where there were none -> feature\n- Closing a spec gap (was permissive by design) -> feature\n- Refactor (extract, rename, move) -> not a bug fix\n- NEW tests for untested code -> coverage backfill\n- Type hardening, removing 'as any' -> refactor\n- Adding error handling where there was none -> feature\n- Implementing stubbed routes/handlers/placeholder UI -> feature\n- Wiring features, updating dead links to real ones -> feature\n\nKeywords ('fix','bug','broken','error','issue','wrong','failing','regression','not working') are weak - often colloquial. Lean NOT-a-bug-fix unless conversation clearly describes previously-working behavior that broke.\n\nIf NOT a true bug fix: respond {\"ok\": true, \"reason\": \"Not a bug fix.\"}.\n\nIf TRUE bug fix: Search the FULL transcript including ALL assistant messages (not just the most recent) for a block containing all three exact labels: 'ROOT CAUSE:', 'DUPLICATES FOUND:', 'FIX APPROACH:'. Scan thoroughly before concluding missing.\n\nIf all three appear anywhere in assistant output: respond {\"ok\": true, \"reason\": \"Bug fix protocol completed.\"}.\n\nElse: respond {\"ok\": false, \"reason\": \"BUG FIX PROTOCOL REQUIRED. Before writing fix code, output:\\n\\nROOT CAUSE: [function/line]\\nDUPLICATES FOUND: [list or none]\\nFIX APPROACH: [patch / consolidate / refactor]\\n\\nComplete the protocol first, then proceed.\"}.",
+            "timeout": 15,
+            "statusMessage": "Checking bug fix protocol compliance..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-line-count.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking file line count..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-compact-reminder.sh\"",
+            "timeout": 5,
+            "statusMessage": "Re-injecting critical reminders..."
+          }
+        ]
+      }
+    ]
+  }
+}
