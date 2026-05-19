@@ -1,6 +1,7 @@
 // Composes per-feature schema fragments. See docs/architecture.md.
 // Each feature owns its own tables under features/<name>/schema.ts.
 
+import { agentsSchema } from "@/features/agents/schema";
 import { analyticsSchema } from "@/features/analytics/schema";
 import { brandProfileSchema } from "@/features/brand-profile/schema";
 import { calendarSchema } from "@/features/calendar/schema";
@@ -20,4 +21,5 @@ export default defineSchema({
   ...postGeneratorSchema,
   ...calendarSchema,
   ...analyticsSchema,
+  ...agentsSchema,
 });
