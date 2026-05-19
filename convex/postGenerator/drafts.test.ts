@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import { internal } from "../_generated/api";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import schema from "../schema";
 
@@ -97,5 +97,153 @@ describe("postGenerator/drafts mutations", () => {
         .collect(),
     );
     expect(drafts).toHaveLength(0);
+  });
+});
+
+const invokeMock = vi.hoisted(() => vi.fn());
+
+vi.mock("../../agents/post-writer", () => ({
+  invoke: invokeMock,
+  AgentError: class AgentError extends Error {
+    constructor(
+      public code: string,
+      message: string,
+      public retryable: boolean,
+    ) {
+      super(message);
+      this.name = code;
+    }
+  },
+}));
+
+const asUser = (userId: string) => ({ subject: `${userId}|sess` });
+
+beforeEach(() => {
+  process.env.OPENROUTER_API_KEY = "test-key";
+  invokeMock.mockReset();
+});
+
+afterEach(() => {
+  // biome-ignore lint/performance/noDelete: must remove env var entirely.
+  delete process.env.OPENROUTER_API_KEY;
+});
+
+describe("postGenerator/drafts generate action", () => {
+  it("happy path inserts draft + run, returns draftId", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, brandId } = await seedUserAndBrand(t);
+    invokeMock.mockResolvedValueOnce({
+      text: "hello world",
+      modelUsed: "anthropic/claude-sonnet-4-6",
+      tokensIn: 10,
+      tokensOut: 20,
+      costUsd: 0.001,
+      latencyMs: 250,
+    });
+    const result = await t
+      .withIdentity(asUser(userId))
+      .action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "Announce launch",
+        channel: "x",
+        tone: "warm",
+      });
+    expect(result.draftId).toBeDefined();
+    const draft = await t.run((ctx) => ctx.db.get(result.draftId));
+    expect(draft?.text).toBe("hello world");
+  });
+
+  it("unauthenticated caller is rejected", async () => {
+    const t = convexTest(schema, modules);
+    const { brandId } = await seedUserAndBrand(t);
+    await expect(
+      t.action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "x",
+        channel: "x",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/UNAUTHENTICATED/);
+  });
+
+  it("wrong-brand caller is rejected (NOT_FOUND)", async () => {
+    const t = convexTest(schema, modules);
+    const { brandId } = await seedUserAndBrand(t);
+    const otherUserId = await t.run((ctx) =>
+      ctx.db.insert("users", { email: "bob@omnigrowth.dev", tier: "free" }),
+    );
+    await expect(
+      t.withIdentity(asUser(otherUserId)).action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "x",
+        channel: "x",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/NOT_FOUND/);
+  });
+
+  it("invalid channel code is rejected", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, brandId } = await seedUserAndBrand(t);
+    await expect(
+      t.withIdentity(asUser(userId)).action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "x",
+        channel: "not-a-channel",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/INVALID_CHANNEL/);
+  });
+
+  it("on AgentError records run with failed status and no draft, propagates the code", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, brandId } = await seedUserAndBrand(t);
+    const { AgentError } = await import("../../agents/post-writer");
+    invokeMock.mockRejectedValueOnce(new AgentError("GEN_FAILED", "boom", true));
+    await expect(
+      t.withIdentity(asUser(userId)).action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "x",
+        channel: "x",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/GEN_FAILED/);
+    const runs = await t.run((ctx) =>
+      ctx.db
+        .query("agent_runs")
+        .withIndex("by_brand", (q) => q.eq("brandId", brandId))
+        .collect(),
+    );
+    expect(runs).toHaveLength(1);
+    expect(runs[0].status).toBe("failed");
+    const drafts = await t.run((ctx) =>
+      ctx.db
+        .query("postgen_drafts")
+        .withIndex("by_brand", (q) => q.eq("brandId", brandId))
+        .collect(),
+    );
+    expect(drafts).toHaveLength(0);
+  });
+
+  it("on GEN_REFUSED records run with refused status and no draft", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, brandId } = await seedUserAndBrand(t);
+    const { AgentError } = await import("../../agents/post-writer");
+    invokeMock.mockRejectedValueOnce(new AgentError("GEN_REFUSED", "refused", false));
+    await expect(
+      t.withIdentity(asUser(userId)).action(api.postGenerator.generate.generate, {
+        brandId,
+        brief: "x",
+        channel: "x",
+        tone: "warm",
+      }),
+    ).rejects.toThrow(/GEN_REFUSED/);
+    const runs = await t.run((ctx) =>
+      ctx.db
+        .query("agent_runs")
+        .withIndex("by_brand", (q) => q.eq("brandId", brandId))
+        .collect(),
+    );
+    expect(runs[0].status).toBe("refused");
   });
 });
