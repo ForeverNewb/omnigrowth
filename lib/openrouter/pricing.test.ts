@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeCostUsd, MODEL_PRICING } from "./pricing";
+import { MODEL_PRICING, computeCostUsd } from "./pricing";
 
 describe("computeCostUsd", () => {
   it("prefers OpenRouter's reported cost when provided", () => {

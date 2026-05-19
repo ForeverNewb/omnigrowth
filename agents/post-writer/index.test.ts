@@ -5,7 +5,10 @@ const chatCompleteMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/openrouter", () => ({
   chatComplete: chatCompleteMock,
   OpenRouterError: class OpenRouterError extends Error {
-    constructor(public code: string, message: string) {
+    constructor(
+      public code: string,
+      message: string,
+    ) {
       super(message);
       this.name = code;
     }
@@ -87,7 +90,9 @@ describe("post-writer invoke", () => {
   });
 
   it("translates OPENROUTER_CHAIN_EXHAUSTED to GEN_FAILED (retryable)", async () => {
-    chatCompleteMock.mockRejectedValueOnce(new OpenRouterError("OPENROUTER_CHAIN_EXHAUSTED", "all failed"));
+    chatCompleteMock.mockRejectedValueOnce(
+      new OpenRouterError("OPENROUTER_CHAIN_EXHAUSTED", "all failed"),
+    );
     await expect(invoke(baseInput)).rejects.toMatchObject({
       name: "GEN_FAILED",
       retryable: true,

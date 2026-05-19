@@ -1,6 +1,6 @@
 import { createOpenRouterClient } from "./client";
 import { computeCostUsd } from "./pricing";
-import { wrapWithLangfuse, type TraceContext } from "./trace";
+import { type TraceContext, wrapWithLangfuse } from "./trace";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -27,10 +27,7 @@ export type RunRecord = {
 
 export class OpenRouterError extends Error {
   constructor(
-    public code:
-      | "OPENROUTER_BAD_REQUEST"
-      | "OPENROUTER_AUTH"
-      | "OPENROUTER_CHAIN_EXHAUSTED",
+    public code: "OPENROUTER_BAD_REQUEST" | "OPENROUTER_AUTH" | "OPENROUTER_CHAIN_EXHAUSTED",
     message: string,
     public data?: Record<string, unknown>,
   ) {
@@ -40,8 +37,10 @@ export class OpenRouterError extends Error {
 }
 
 function errorStatus(err: unknown): number | undefined {
-  return (err as { status?: number; response?: { status?: number } } | null)?.status
-    ?? (err as { response?: { status?: number } } | null)?.response?.status;
+  return (
+    (err as { status?: number; response?: { status?: number } } | null)?.status ??
+    (err as { response?: { status?: number } } | null)?.response?.status
+  );
 }
 
 function shouldRetry(err: unknown): boolean {
@@ -62,9 +61,7 @@ function detectRefusal(finishReason: string | undefined, content: string): boole
 
 export async function chatComplete(input: ChatCompleteInput): Promise<RunRecord> {
   const baseClient = createOpenRouterClient({ apiKey: input.apiKey });
-  const client = input.traceContext
-    ? wrapWithLangfuse(baseClient, input.traceContext)
-    : baseClient;
+  const client = input.traceContext ? wrapWithLangfuse(baseClient, input.traceContext) : baseClient;
 
   const attempted: string[] = [];
   let lastError: unknown;
@@ -107,9 +104,8 @@ export async function chatComplete(input: ChatCompleteInput): Promise<RunRecord>
     }
   }
 
-  throw new OpenRouterError(
-    "OPENROUTER_CHAIN_EXHAUSTED",
-    `All ${attempted.length} models failed`,
-    { attemptedModels: attempted, lastError: String(lastError) },
-  );
+  throw new OpenRouterError("OPENROUTER_CHAIN_EXHAUSTED", `All ${attempted.length} models failed`, {
+    attemptedModels: attempted,
+    lastError: String(lastError),
+  });
 }

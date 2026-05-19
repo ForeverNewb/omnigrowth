@@ -1,5 +1,5 @@
-import type OpenAI from "openai";
 import { observeOpenAI } from "langfuse";
+import type OpenAI from "openai";
 
 export type TraceContext = {
   agentId: string;

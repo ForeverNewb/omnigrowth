@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { chatComplete, OpenRouterError, type ChatMessage } from "@/lib/openrouter";
+import { type ChatMessage, OpenRouterError, chatComplete } from "@/lib/openrouter";
 import type { TraceContext } from "@/lib/openrouter/trace";
-import { renderChannelRules, type Channel } from "./channels";
+import { type Channel, renderChannelRules } from "./channels";
 import { modelChainsByMedia } from "./config";
 
 const AGENT_DIR = join(process.cwd(), "agents", "post-writer");

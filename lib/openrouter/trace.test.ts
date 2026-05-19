@@ -5,8 +5,11 @@ import { wrapWithLangfuse } from "./trace";
 const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(() => {
+  // biome-ignore lint/performance/noDelete: must remove env vars entirely; assignment would coerce to "undefined" string.
   delete process.env.LANGFUSE_PUBLIC_KEY;
+  // biome-ignore lint/performance/noDelete: must remove env vars entirely; assignment would coerce to "undefined" string.
   delete process.env.LANGFUSE_SECRET_KEY;
+  // biome-ignore lint/performance/noDelete: must remove env vars entirely; assignment would coerce to "undefined" string.
   delete process.env.LANGFUSE_BASEURL;
 });
 

@@ -75,7 +75,7 @@ export function renderChannelRules(channel: Channel): string {
   const c = CHANNELS[channel];
   const hashtagLine = c.hashtags.use
     ? `Hashtags: up to ${c.hashtags.max} relevant tags.`
-    : `Hashtags: none.`;
+    : "Hashtags: none.";
   return [
     `Channel: ${c.name}`,
     `Character limit: ${c.charLimit}.`,

@@ -12,13 +12,16 @@ vi.mock("./client", () => ({
 
 // Force the Langfuse wrapper to be a no-op for these tests.
 vi.mock("./trace", () => ({
-  wrapWithLangfuse: <T,>(c: T) => c,
+  wrapWithLangfuse: <T>(c: T) => c,
 }));
 
-import { chatComplete, OpenRouterError } from "./index";
+import { OpenRouterError, chatComplete } from "./index";
 
 class HttpError extends Error {
-  constructor(public status: number, message = `HTTP ${status}`) {
+  constructor(
+    public status: number,
+    message = `HTTP ${status}`,
+  ) {
     super(message);
   }
 }
@@ -93,7 +96,9 @@ describe("chatComplete", () => {
 
   it("returns RunRecord with refused: true when finish_reason is content_filter", async () => {
     createChatCompletionMock.mockResolvedValueOnce({
-      choices: [{ message: { content: "I can't help with that." }, finish_reason: "content_filter" }],
+      choices: [
+        { message: { content: "I can't help with that." }, finish_reason: "content_filter" },
+      ],
       usage: { prompt_tokens: 5, completion_tokens: 8 },
       model: "anthropic/claude-sonnet-4-6",
     });

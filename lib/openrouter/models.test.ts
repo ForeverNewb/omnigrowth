@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OPENROUTER_TEXT_CHAIN, getModelChain, type MediaType } from "./models";
+import { type MediaType, OPENROUTER_TEXT_CHAIN, getModelChain } from "./models";
 
 describe("OPENROUTER_TEXT_CHAIN", () => {
   it("lists the text model fallback order", () => {
