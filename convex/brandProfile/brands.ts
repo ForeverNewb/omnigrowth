@@ -7,7 +7,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { type Tier, assertBrandQuotaOk } from "../../lib/billing/tiers";
-import { mutation, query } from "../_generated/server";
+import { internalQuery, mutation, query } from "../_generated/server";
 
 // Trim and reject empty/whitespace names. Used by both `create` and `rename`.
 // Convex `v.string()` validators don't support min-length constraints, so the
@@ -143,5 +143,12 @@ export const remove = mutation({
     // for tables with R2 dependencies, or ctx.db.delete for pure Convex tables.)
 
     await ctx.db.delete(brandId);
+  },
+});
+
+export const getById = internalQuery({
+  args: { brandId: v.id("brand_profiles") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.brandId);
   },
 });
