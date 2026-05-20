@@ -4165,7 +4165,8 @@ body.app-page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) 320px;
   gap: 24px;
-  align-items: stretch;
+  align-items: start;
+  min-height: calc(100vh - 230px);
 }
 .gen-page-grid > * {
   min-width: 0;
@@ -4173,6 +4174,7 @@ body.app-page {
 .gen-page-grid > .history-rail {
   align-self: stretch;
   max-height: none;
+  min-height: calc(100vh - 230px);
 }
 @media (max-width: 1280px) {
   .gen-page-grid {
