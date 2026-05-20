@@ -1,5 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
-import { GeneratorForm } from "@/features/post-generator/components/GeneratorForm";
+import { GeneratorWorkspace } from "@/features/post-generator/components/GeneratorWorkspace";
 
 export default async function GeneratePage({
   params,
@@ -10,16 +10,19 @@ export default async function GeneratePage({
 
   return (
     <>
-      <div className="app-page-head">
+      <div className="gen-page-head">
         <div>
-          <h1>AI Post Generator</h1>
-          <p className="caption">Text drafts. One channel at a time. Image and video land next.</p>
+          <h1>
+            Brief once. <em>Drafts that read like you.</em>
+          </h1>
+          <p className="body-lg mt-8">
+            Tell the AI what you want to post. Pick a channel and tone. Preview, regenerate, or send
+            to the calendar.
+          </p>
         </div>
       </div>
 
-      <section className="mt-24" style={{ maxWidth: 720 }}>
-        <GeneratorForm brandId={brandId as Id<"brand_profiles">} />
-      </section>
+      <GeneratorWorkspace brandId={brandId as Id<"brand_profiles">} />
     </>
   );
 }
