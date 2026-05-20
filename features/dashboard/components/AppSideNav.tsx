@@ -8,8 +8,9 @@ import { usePathname } from "next/navigation";
 // state matching.
 const PRIMARY = [
   { slug: "dashboard", icon: "01", label: "Dashboard" },
-  { slug: "calendar", icon: "02", label: "Calendar" },
-  { slug: "analytics", icon: "03", label: "Analytics" },
+  { slug: "generate", icon: "02", label: "AI Generator" },
+  { slug: "calendar", icon: "03", label: "Calendar" },
+  { slug: "analytics", icon: "04", label: "Analytics" },
 ];
 
 const PLATFORMS = [

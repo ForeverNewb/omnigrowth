@@ -1,5 +1,6 @@
-import { v } from "convex/values";
-import { internalMutation } from "../_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { ConvexError, v } from "convex/values";
+import { internalMutation, query } from "../_generated/server";
 
 const runFieldsValidator = v.object({
   agentId: v.string(),
@@ -67,5 +68,20 @@ export const persistRunOnly = internalMutation({
       ...args.runFields,
       createdAt: Date.now(),
     });
+  },
+});
+
+export const listByBrand = query({
+  args: { brandId: v.id("brand_profiles"), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new ConvexError({ code: "UNAUTHENTICATED" });
+    const brand = await ctx.db.get(args.brandId);
+    if (!brand || brand.userId !== userId) throw new ConvexError({ code: "NOT_FOUND" });
+    return await ctx.db
+      .query("postgen_drafts")
+      .withIndex("by_brand", (q) => q.eq("brandId", args.brandId))
+      .order("desc")
+      .take(args.limit ?? 50);
   },
 });
