@@ -4160,16 +4160,34 @@ body.app-page {
    POST-GENERATOR PAGE — extracted from Claude Design generator.html
    =========================================================== */
 
-/* Page-level 2-column grid */
+/* Page-level 3-column grid: BRIEF | PREVIEW | HISTORY */
 .gen-page-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(280px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) 320px;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
+}
+.gen-page-grid > * {
+  min-width: 0;
+}
+.gen-page-grid > .history-rail {
+  align-self: stretch;
+  max-height: none;
 }
 @media (max-width: 1280px) {
   .gen-page-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  .gen-page-grid > .preview-card {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 900px) {
+  .gen-page-grid {
     grid-template-columns: 1fr;
+  }
+  .gen-page-grid > .preview-card {
+    grid-column: auto;
   }
 }
 
