@@ -34,22 +34,17 @@ export function GeneratorWorkspace({ brandId }: GeneratorWorkspaceProps) {
 
   return (
     <div className="gen-page-grid mt-32">
-      {/* 01 BRIEF */}
       <BriefPanel
         brandId={brandId}
         brandVoice={brand?.name ?? null}
         onDraftCreated={handleDraftCreated}
       />
-
-      {/* Right column: 02 PREVIEW + 03 HISTORY stacked */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <PreviewPanel draft={selectedDraft} />
-        <HistoryRail
-          brandId={brandId}
-          selectedDraftId={selectedDraftId}
-          onSelect={handleHistorySelect}
-        />
-      </div>
+      <PreviewPanel draft={selectedDraft} />
+      <HistoryRail
+        brandId={brandId}
+        selectedDraftId={selectedDraftId}
+        onSelect={handleHistorySelect}
+      />
     </div>
   );
 }
