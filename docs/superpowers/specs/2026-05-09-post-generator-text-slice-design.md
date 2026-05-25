@@ -50,7 +50,7 @@ convex action: postGenerator.generate({ brandId, brief, channel, tone })
   │   side-effect: Langfuse trace pushed by wrapped openai client (when LANGFUSE_PUBLIC_KEY set)
   │
   ├─ internalMutation persistRunAndDraft({ runFields, draftFields })
-  │     atomically inserts agent_runs + post_drafts rows
+  │     atomically inserts agent_runs + postgen_drafts rows
   │     (failure path: persistRunOnly inserts agent_runs with status: failed/refused, no draft row)
   └─ return { draftId, draft }
 ```
@@ -73,7 +73,7 @@ convex action: postGenerator.generate({ brandId, brief, channel, tone })
 |  | `index.ts` | `invoke({ brand, brief, channel, tone }) → AgentResult`. |
 | **`convex/agents/`** | `schema.ts` | `agent_runs` table (see Data model below). |
 |  | `runs.ts` | `write` (internalMutation), `listByBrandInternal` (internal query, full payload incl. `modelUsed` / `providerUsed` / `costUsd`), `listByBrandPublic` (query, strips model/provider/cost for UI). |
-| **`convex/postGenerator/`** | `schema.ts` | `post_drafts` table (see Data model below). |
+| **`convex/postGenerator/`** | `schema.ts` | `postgen_drafts` table (see Data model below). |
 |  | `drafts.ts` | `generate` (action), `persistRunAndDraft` (internalMutation, atomic insert pair), `persistRunOnly` (internalMutation, failure-path), `list` (query), `get` (query), `save` (mutation), `remove` (mutation). |
 
 ### Data model
@@ -101,9 +101,9 @@ agent_runs: defineTable({
   .index("by_user", ["userId", "createdAt"])
 ```
 
-**`post_drafts`** (new in `convex/schema.ts`):
+**`postgen_drafts`** (new in `convex/schema.ts`):
 ```ts
-post_drafts: defineTable({
+postgen_drafts: defineTable({
   brandId: v.id("brand_profiles"),
   userId: v.id("users"),
   brief: v.string(),
@@ -128,7 +128,7 @@ post_drafts: defineTable({
   .index("by_brand_status", ["brandId", "status"])
 ```
 
-> `modelUsed` lives only on `agent_runs`, never on `post_drafts`. UI surfaces never join through `agentRunId`; that path is reserved for internal/admin queries.
+> `modelUsed` lives only on `agent_runs`, never on `postgen_drafts`. UI surfaces never join through `agentRunId`; that path is reserved for internal/admin queries.
 
 ## Error handling
 
@@ -158,8 +158,8 @@ post_drafts: defineTable({
 
 ### Inside `convex/postGenerator.generate` action
 
-- AgentError → call `internalMutation persistRunOnly` with `status: "failed"` (or `"refused"`), error message stored, **no `post_drafts` row inserted**, return `ConvexError({ code: agentError.code })` to client.
-- Success → call `internalMutation persistRunAndDraft` to insert both `agent_runs` (status: ok) and `post_drafts` in a single atomic mutation.
+- AgentError → call `internalMutation persistRunOnly` with `status: "failed"` (or `"refused"`), error message stored, **no `postgen_drafts` row inserted**, return `ConvexError({ code: agentError.code })` to client.
+- Success → call `internalMutation persistRunAndDraft` to insert both `agent_runs` (status: ok) and `postgen_drafts` in a single atomic mutation.
 
 ## Testing strategy
 
@@ -181,10 +181,10 @@ Per memory `feedback_tdd_discipline`: TDD for `lib/` and `convex/`, declared exp
 ### Integration tests (Vitest + convex-test)
 
 - `convex/postGenerator/drafts.test.ts`:
-  - Happy path: action returns `{ draftId, draft }`, `post_drafts` row exists, `agent_runs` row exists with `status: ok`.
+  - Happy path: action returns `{ draftId, draft }`, `postgen_drafts` row exists, `agent_runs` row exists with `status: ok`.
   - Anonymous caller → throws `UNAUTHENTICATED`, no rows inserted.
   - Wrong-brand (brand owned by another user) → throws `NOT_FOUND`, no rows inserted.
-  - Agent failure → `agent_runs` row exists with `status: "failed"`, no `post_drafts` row.
+  - Agent failure → `agent_runs` row exists with `status: "failed"`, no `postgen_drafts` row.
   - Public query `listByBrandPublic` does NOT include `modelUsed` / `providerUsed` / `costUsd` fields.
 
 ### Live test (manual, env-gated)
